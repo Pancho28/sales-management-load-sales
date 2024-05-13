@@ -30,7 +30,8 @@ def main():
                             inner join sales.local l on l.id = o.localId
                             inner join sales.order_item oi on oi.orderId = o.id
                             inner join sales.product p on p.id = oi.productId
-                            where l.id = '{id}'""")
+                            where l.id = '{id}'
+                            AND o.creationdate >= CONCAT(DATE_ADD(CURDATE(), INTERVAL -1 DAY), ' 11:00:00')""")
             sales = cur.fetchall()
             dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fecha', 'hora', 'producto', 'precio', 'cantidad'])
             logger.info(f'Total sales {dfSales.shape[0]}')
@@ -40,7 +41,8 @@ def main():
                             inner join sales.local l on l.id = o.localId
                             inner join sales.payment_order po on po.orderId = o.id
                             inner join sales.payment_type pt on pt.id = po.paymentTypeId
-                            where l.id = '{id}' """)
+                            where l.id = '{id}' 
+                            AND o.creationdate >= CONCAT(DATE_ADD(CURDATE(), INTERVAL -1 DAY), ' 11:00:00')""")
             payments = cur.fetchall()
             dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'amount', 'paymentType', 'currency'])
             logger.info(f'Total payments {dfPayments.shape[0]}')
