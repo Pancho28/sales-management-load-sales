@@ -13,6 +13,7 @@ def main():
     try:
         today = datetime.datetime.now()
         formatted_date = today.strftime("%Y-%m-%d")
+        logger.info(f'Start process {formatted_date}')
         db_host = os.getenv("DATABASE_HOST")
         db_user = os.getenv("DATABASE_USERNAME")
         db_password = os.getenv("DATABASE_PASSWORD")
@@ -28,7 +29,7 @@ def main():
         for id, username in locals:
             logger.info(f'Query sales for user {username}')
             cur.execute(f"""select l.name as local, o.id as venta, o.totalDl, o.totalBs, date(o.creationdate) as fecha, hour(o.creationdate) as hora,
-                            p.name as producto, c.name as categoria, oi.price, oi.quantity
+                            p.name as producto, c.name as categoria, oi.price, oi.quantity, o.creationdate, o.deliveredDate
                             from sales.order o
                             inner join sales.local l on l.id = o.localId
                             inner join sales.order_item oi on oi.orderId = o.id
@@ -38,7 +39,7 @@ def main():
                             AND o.creationdate >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND o.creationdate <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
             sales = cur.fetchall()
-            dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fecha', 'hora', 'producto', 'categoria', 'precio', 'cantidad'])
+            dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fecha', 'hora', 'producto', 'categoria', 'precio', 'cantidad', 'fechacreacion', 'fechaentrega'])
             logger.info(f'Total sales {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
             cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency
