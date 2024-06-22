@@ -32,11 +32,11 @@ def main():
                             CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion, 
                             p.name as producto, c.name as categoria, oi.price, oi.quantity, 
                             CONVERT_TZ(o.deliveredDate,  @@session.time_zone, '-04:00') as fechaentrega
-                            from sales.order o
-                            inner join sales.local l on l.id = o.localId
-                            inner join sales.order_item oi on oi.orderId = o.id
-                            inner join sales.product p on p.id = oi.productId
-                            inner join sales.category c on c.id = p.categoryId
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join order_item oi on oi.orderId = o.id
+                            inner join product p on p.id = oi.productId
+                            inner join category c on c.id = p.categoryId
                             where l.id = '{id}'
                             having fechacreacion >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND fechacreacion <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
@@ -47,10 +47,11 @@ def main():
             logger.info(f'Total sales {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
             cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency
-                            from sales.order o
-                            inner join sales.local l on l.id = o.localId
-                            inner join sales.payment_order po on po.orderId = o.id
-                            inner join sales.payment_type pt on pt.id = po.paymentTypeId
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join payment_order po on po.orderId = o.id
+                            inner join payment_local p on p.id = po.paymentId
+                            inner join payment_type pt on pt.id = p.paymentTypeId
                             where l.id = '{id}' 
                             AND o.creationdate >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND o.creationdate <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
