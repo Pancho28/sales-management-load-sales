@@ -12,7 +12,7 @@ load_dotenv()
 def main():
     try:
         today = datetime.datetime.now()
-        formatted_date = '2024-06-22' #today.strftime("%Y-%m-%d")
+        formatted_date = today.strftime("%Y-%m-%d")
         logger.info(f'Start process {formatted_date}')
         db_host = os.getenv("DATABASE_HOST")
         db_user = os.getenv("DATABASE_USERNAME")
