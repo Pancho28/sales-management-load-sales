@@ -18,7 +18,8 @@ def main():
         db_user = os.getenv("DATABASE_USERNAME")
         db_password = os.getenv("DATABASE_PASSWORD")
         db_name = os.getenv("DATABASE_NAME")
-        conection = pymysql.connect(host=db_host, user=db_user, password=db_password, db=db_name)
+        db_port = int(os.getenv("DATABASE_PORT"))
+        conection = pymysql.connect(host=db_host, user=db_user, password=db_password, db=db_name, port=db_port)
         cur = conection.cursor()
         logger.info('Query locals')
         cur.execute(""" SELECT l.id, u.username 
