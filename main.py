@@ -44,10 +44,11 @@ def main():
             sales = cur.fetchall()
             dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
-            dfSales = dfSales.assign(fecha=dfSales.fechacreacion.dt.date, hora=dfSales.fechacreacion.dt.time)
+            dfSales = dfSales.assign(dia=dfSales.fechacreacion.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
             logger.info(f'Total sales {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
-            cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency
+            cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
+                            CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
                             from orders o
                             inner join local l on l.id = o.localId
                             inner join payment_order po on po.orderId = o.id
@@ -57,11 +58,11 @@ def main():
                             AND o.creationdate >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND o.creationdate <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
             payments = cur.fetchall()
-            dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'amount', 'paymentType', 'currency'])
+            dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
             logger.info(f'Total payments {dfPayments.shape[0]}')
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
-            dfSales.to_excel(writer, sheet_name='ventas')
-            dfPayments.to_excel(writer, sheet_name='pagos')
+            dfSales.to_excel(writer, sheet_name='ventas', index=False)
+            dfPayments.to_excel(writer, sheet_name='pagos', index=False)
             writer.close()
     except Exception as e:
         logger.error(e)
