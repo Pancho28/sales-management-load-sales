@@ -2,7 +2,7 @@ import pandas as pd
 import logging
 from dotenv import load_dotenv
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from config.db import DBConnection
 from queries.query import query_locals, query_sales, query_payments
 
@@ -15,12 +15,15 @@ def main():
         conection = None
         if len(sys.argv) == 3:
             formatted_date = datetime.strptime(sys.argv[2], "%Y-%m-%d").strftime("%Y-%m-%d")
+            logger.info(f'Starting reprocess {formatted_date}')
         elif len(sys.argv) == 2:
             formatted_date = datetime.now().strftime("%Y-%m-%d")
+            logger.info(f'Starting process {formatted_date}')
         else:
             logger.error('Wrong number of arguments')
             return
-        logger.info(f'Start process {formatted_date}')
+        close_date = datetime.strptime(formatted_date, "%Y-%m-%d") - timedelta(days=1)
+        close_date = close_date.strftime("%Y-%m-%d")
         db = DBConnection(sys.argv[1])
         conection = db.get_conections()
         cur = conection.cursor()
@@ -47,7 +50,8 @@ def main():
             sales = cur.fetchall()
             dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
-            dfSales = dfSales.assign(dia=dfSales.fechacreacion.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
+            dfSales = dfSales.assign(fechacierre=pd.to_datetime(close_date))
+            dfSales = dfSales.assign(dia=dfSales.fechacierre.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
             logger.info(f'Total sales {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
             cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
@@ -62,6 +66,7 @@ def main():
                             AND fechacreacion <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
             payments = cur.fetchall()
             dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
+            dfPayments = dfPayments.assign(fechacierre=pd.to_datetime(close_date))
             logger.info(f'Total payments {dfPayments.shape[0]}')
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
             dfSales.to_excel(writer, sheet_name='ventas', index=False)
