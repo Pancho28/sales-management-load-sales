@@ -52,7 +52,8 @@ def main():
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
             dfSales = dfSales.assign(fechacierre=pd.to_datetime(close_date))
             dfSales = dfSales.assign(dia=dfSales.fechacierre.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
-            logger.info(f'Total sales {dfSales.shape[0]}')
+            logger.info(f'Total sales {dfSales.venta.nunique()}')
+            logger.info(f'Total sales records {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
             cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
                             CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
@@ -67,7 +68,8 @@ def main():
             payments = cur.fetchall()
             dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
             dfPayments = dfPayments.assign(fechacierre=pd.to_datetime(close_date))
-            logger.info(f'Total payments {dfPayments.shape[0]}')
+            logger.info(f'Total payments {dfPayments.venta.nunique()}')
+            logger.info(f'Total payments records {dfPayments.shape[0]}')
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
             dfSales.to_excel(writer, sheet_name='ventas', index=False)
             dfPayments.to_excel(writer, sheet_name='pagos', index=False)
