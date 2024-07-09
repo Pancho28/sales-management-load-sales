@@ -28,14 +28,25 @@ def main():
         conection = db.get_conections()
         cur = conection.cursor()
         logger.info('Query locals')
-        cur.execute("""SELECT l.id, u.username 
+        cur.execute(f"""SELECT l.id, u.username 
                     FROM user u 
-                    inner join local l on l.userId = u.id 
+                    inner join local l on l.userId = u.id
+                    inner join (
+                    	select o.localId, CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion 
+                    	from orders o 
+						having fechacreacion >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
+                        AND fechacreacion <= CONCAT(date('{formatted_date}'), ' 11:00:00')
+						limit 1
+                    ) o on o.localId = l.id 
                     where role = "seller" """)
         locals = cur.fetchall()
+        if len(locals) == 0:
+            logger.warning('No locals to process')
+            return
+        logger.info(f'Total locals {len(locals)}')
         for id, username in locals:
             logger.info(f'Query sales for user {username}')
-            cur.execute(f"""select l.name as local, o.id as venta, o.totalDl, o.totalBs, 
+            cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, 
                             CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion, 
                             p.name as producto, c.name as categoria, oi.price, oi.quantity, 
                             CONVERT_TZ(o.deliveredDate,  @@session.time_zone, '-04:00') as fechaentrega
@@ -48,14 +59,14 @@ def main():
                             having fechacreacion >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND fechacreacion <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
             sales = cur.fetchall()
-            dfSales = pd.DataFrame(sales, columns=['local', 'venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
+            dfSales = pd.DataFrame(sales, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
             dfSales = dfSales.assign(fechacierre=pd.to_datetime(close_date))
             dfSales = dfSales.assign(dia=dfSales.fechacierre.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
             logger.info(f'Total sales {dfSales.venta.nunique()}')
             logger.info(f'Total sales records {dfSales.shape[0]}')
             logger.info(f'Query payments for user {username}')
-            cur.execute(f"""select l.name, o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
+            cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
                             CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
                             from orders o
                             inner join local l on l.id = o.localId
@@ -66,8 +77,9 @@ def main():
                             having fechacreacion >= CONCAT(DATE_ADD('{formatted_date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND fechacreacion <= CONCAT(date('{formatted_date}'), ' 11:00:00')""")
             payments = cur.fetchall()
-            dfPayments = pd.DataFrame(payments, columns=['local', 'venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
+            dfPayments = pd.DataFrame(payments, columns=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
             dfPayments = dfPayments.assign(fechacierre=pd.to_datetime(close_date))
+            dfPayments = dfPayments.drop('fechacreacion', axis=1)
             logger.info(f'Total payments {dfPayments.venta.nunique()}')
             logger.info(f'Total payments records {dfPayments.shape[0]}')
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
