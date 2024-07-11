@@ -22,7 +22,57 @@ class DBConnection:
             self.db_password = os.getenv("DATABASE_PASSWORD")
             self.db_name = os.getenv("DATABASE_NAME")
             self.db_port = int(os.getenv("DATABASE_PORT"))
+        self.conection = pymysql.connect(host=self.db_host, user=self.db_user, password=self.db_password, db=self.db_name, port=self.db_port)
+        self.cur = self.conection.cursor()
+    
+    def close_conection(self):
+        self.conection.close() 
+        logger.info('Close conection')
 
-    def get_conections(self):
-        conection = pymysql.connect(host=self.db_host, user=self.db_user, password=self.db_password, db=self.db_name, port=self.db_port)
-        return conection
+    def get_locals(self, date):
+        logger.info('Query locals')
+        self.cur.execute(f"""SELECT l.id, u.username 
+                    FROM user u 
+                    inner join local l on l.userId = u.id
+                    inner join (
+                    	select o.localId, CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion 
+                    	from orders o 
+						having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                        AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')
+						limit 1
+                    ) o on o.localId = l.id 
+                    where role = "seller" """)
+        locals = self.cur.fetchall()
+        return locals
+    
+    def get_sales(self,username,tiendaId,date):
+        logger.info(f'Query sales for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, 
+                        CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion, 
+                        p.name as producto, c.name as categoria, oi.price, oi.quantity, 
+                        CONVERT_TZ(o.deliveredDate,  @@session.time_zone, '-04:00') as fechaentrega
+                        from orders o
+                        inner join local l on l.id = o.localId
+                        inner join order_item oi on oi.orderId = o.id
+                        inner join product p on p.id = oi.productId
+                        inner join category c on c.id = p.categoryId
+                        where l.id = '{tiendaId}'
+                        having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                        AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+        sales = self.cur.fetchall()
+        return sales
+    
+    def get_payments(self,username,tiendaId,date):
+        logger.info(f'Query payments for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
+                            CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join payment_order po on po.orderId = o.id
+                            inner join payment_local p on p.id = po.paymentId
+                            inner join payment_type pt on pt.id = p.paymentTypeId
+                            where l.id = '{tiendaId}' 
+                            having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+        payments = self.cur.fetchall()
+        return payments
