@@ -71,7 +71,8 @@ def main():
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
             dfSales.to_excel(writer, sheet_name='ventas', index=False)
             dfPayments.to_excel(writer, sheet_name='pagos', index=False)
-            dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
+            if dfUnpaid.shape[0] > 0:
+                dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
             writer.close()
     except Exception as e:
         logger.error(e)
