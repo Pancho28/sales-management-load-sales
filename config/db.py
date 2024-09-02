@@ -56,9 +56,30 @@ class DBConnection:
                         inner join order_item oi on oi.orderId = o.id
                         inner join product p on p.id = oi.productId
                         inner join category c on c.id = p.categoryId
+                        inner join payment_order po on po.orderId = o.id
                         where l.id = '{tiendaId}'
+                        and po.isPaid = 1
                         having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
                         AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+        sales = self.cur.fetchall()
+        return sales
+    
+    def get_sales_paid(self,username,tiendaId,date):
+        logger.info(f'Query sales paid for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, 
+                                  CONVERT_TZ(ci.paymentDate,  @@session.time_zone, '-04:00') as fechacreacion, 
+                                  p.name as producto, c.name as categoria, oi.price, oi.quantity, 
+                                  CONVERT_TZ(o.deliveredDate,  @@session.time_zone, '-04:00') as fechaentrega
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join order_item oi on oi.orderId = o.id
+                            inner join product p on p.id = oi.productId
+                            inner join category c on c.id = p.categoryId
+                            inner join sales.payment_order po on o.id = po.orderId
+                            inner join sales.customer_information ci on po.id = ci.paymentOrderId
+                            where l.id = '{tiendaId}'
+                            having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
         sales = self.cur.fetchall()
         return sales
     
@@ -72,7 +93,43 @@ class DBConnection:
                             inner join payment_local p on p.id = po.paymentId
                             inner join payment_type pt on pt.id = p.paymentTypeId
                             where l.id = '{tiendaId}' 
+                            and po.isPaid = 1
                             having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+        payments = self.cur.fetchall()
+        return payments
+    
+    def get_payments_paid(self,username,tiendaId,date):
+        logger.info(f'Query payments paid for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, po.amount, pt.name, pt.currency, 
+                                   CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join payment_order po on po.orderId = o.id
+                            inner join payment_local p on p.id = po.paymentId
+                            inner join payment_type pt on pt.id = p.paymentTypeId
+                            inner join (
+                            		select po.orderId, CONVERT_TZ(ci.paymentDate,  @@session.time_zone, '-04:00') as fechapago
+                                    from payment_order po
+                                    inner join customer_information ci on po.id = ci.paymentOrderId
+                                    having fechapago >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                            		AND fechapago <= CONCAT(date('{date}'), ' 11:00:00')
+                                    ) ci on ci.orderId = o.id 
+                            where l.id = '{tiendaId}'""")
+        payments = self.cur.fetchall()
+        return payments
+    
+    def get_payments_unpaid(self,username,tiendaId):
+        logger.info(f'Query payments unpaids for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, ci.name, ci.lastName,
+                            CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join payment_order po on po.orderId = o.id
+                            inner join payment_local p on p.id = po.paymentId
+                            inner join payment_type pt on pt.id = p.paymentTypeId
+                            inner join customer_information ci on po.id = ci.paymentOrderId
+                            where l.id = '{tiendaId}' 
+                            and po.isPaid = 0""")
         payments = self.cur.fetchall()
         return payments
