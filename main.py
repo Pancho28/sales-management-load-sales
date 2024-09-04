@@ -72,6 +72,7 @@ def main():
             dfSales.to_excel(writer, sheet_name='ventas', index=False)
             dfPayments.to_excel(writer, sheet_name='pagos', index=False)
             if dfUnpaid.shape[0] > 0:
+                logger.info(f'Saving unpaid')
                 dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
             writer.close()
     except Exception as e:

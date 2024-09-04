@@ -75,8 +75,8 @@ class DBConnection:
                             inner join order_item oi on oi.orderId = o.id
                             inner join product p on p.id = oi.productId
                             inner join category c on c.id = p.categoryId
-                            inner join sales.payment_order po on o.id = po.orderId
-                            inner join sales.customer_information ci on po.id = ci.paymentOrderId
+                            inner join payment_order po on o.id = po.orderId
+                            inner join customer_information ci on po.id = ci.paymentOrderId
                             where l.id = '{tiendaId}'
                             having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
                             AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
