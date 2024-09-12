@@ -44,7 +44,7 @@ def main():
             if dfSalesPaid.shape[0] > 0:
                 logger.info(f'Total sales paid {dfSalesPaid.venta.nunique()}')
                 dfSales = pd.concat([dfSales, dfSalesPaid], ignore_index=True)
-                dfSales = dfSales.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
+            dfSales = dfSales.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             logger.info(f'Total sales {dfSales.venta.nunique()}')
             logger.info(f'Total sales records {dfSales.shape[0]}')
             # Flujo de pagos
@@ -59,7 +59,7 @@ def main():
             if dfPaymentsPaid.shape[0] > 0:
                 logger.info(f'Total payments paid {dfPaymentsPaid.venta.nunique()}')
                 dfPayments = pd.concat([dfPayments, dfPaymentsPaid], ignore_index=True)
-                dfPayments = dfPayments.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda'])
+            dfPayments = dfPayments.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda'])
             logger.info(f'Total payments {dfPayments.venta.nunique()}')
             logger.info(f'Total payments records {dfPayments.shape[0]}')
             # Flujo de por pagar
