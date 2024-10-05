@@ -43,7 +43,10 @@ def main():
             dfSalesPaid = dfSalesPaid.assign(dia=dfSalesPaid.fechacierre.dt.day_name(locale="es_ES"), hora=dfSalesPaid.fechacreacion.dt.strftime("%H"))
             if dfSalesPaid.shape[0] > 0:
                 logger.info(f'Total sales paid {dfSalesPaid.venta.nunique()}')
-                dfSales = pd.concat([dfSales, dfSalesPaid], ignore_index=True)
+                if dfSales.shape[0] == 0:
+                    dfSales = dfSalesPaid.copy()
+                else:
+                    dfSales = pd.concat([dfSales, dfSalesPaid], ignore_index=True)
             dfSales = dfSales.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'producto', 'categoria', 'precio', 'cantidad'])
             logger.info(f'Total sales {dfSales.venta.nunique()}')
             logger.info(f'Total sales records {dfSales.shape[0]}')
@@ -58,7 +61,10 @@ def main():
             dfPaymentsPaid = dfPaymentsPaid.drop('fechacreacion', axis=1)
             if dfPaymentsPaid.shape[0] > 0:
                 logger.info(f'Total payments paid {dfPaymentsPaid.venta.nunique()}')
-                dfPayments = pd.concat([dfPayments, dfPaymentsPaid], ignore_index=True)
+                if dfPayments.shape[0] == 0:
+                    dfPayments = dfPaymentsPaid.copy()
+                else:
+                    dfPayments = pd.concat([dfPayments, dfPaymentsPaid], ignore_index=True)
             dfPayments = dfPayments.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda'])
             logger.info(f'Total payments {dfPayments.venta.nunique()}')
             logger.info(f'Total payments records {dfPayments.shape[0]}')
