@@ -47,6 +47,8 @@ def main():
                     dfSales = dfSalesPaid.copy()
                 else:
                     dfSales = pd.concat([dfSales, dfSalesPaid], ignore_index=True)
+            else:
+                logger.info('No sales paid')
             dfSales = dfSales.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'producto', 'categoria', 'precio', 'cantidad'])
             logger.info(f'Total sales {dfSales.venta.nunique()}')
             logger.info(f'Total sales records {dfSales.shape[0]}')
@@ -65,6 +67,8 @@ def main():
                     dfPayments = dfPaymentsPaid.copy()
                 else:
                     dfPayments = pd.concat([dfPayments, dfPaymentsPaid], ignore_index=True)
+            else:
+                logger.info('No payments paid')
             dfPayments = dfPayments.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda'])
             logger.info(f'Total payments {dfPayments.venta.nunique()}')
             logger.info(f'Total payments records {dfPayments.shape[0]}')
