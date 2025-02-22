@@ -85,6 +85,7 @@ def main():
                 logger.info(f'Saving unpaid')
                 dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
             writer.close()
+            logger.info(f'File saved {username}-{formatted_date}.xlsx')
     except Exception as e:
         logger.error(e)
     finally:

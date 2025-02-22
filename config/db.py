@@ -32,16 +32,17 @@ class DBConnection:
     def get_locals(self, date):
         logger.info('Query locals')
         self.cur.execute(f"""SELECT l.id, u.username 
-                    FROM user u 
-                    inner join local l on l.userId = u.id
-                    inner join (
-                    	select o.localId, CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion 
-                    	from orders o 
-						having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
-                        AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')
-						limit 1
-                    ) o on o.localId = l.id 
-                    where role = "seller" """)
+                                FROM user u 
+                                inner join local l on l.userId = u.id
+                                inner join (
+                                      select o.localId, date(CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00')) as fechacreacion 
+                                		from orders o 
+                                		group by o.localId, fechacreacion
+                                		having fechacreacion >= DATE_ADD('{date}', INTERVAL -1 DAY)
+                                		AND fechacreacion <= date('{date}')
+                                ) o on o.localId = l.id
+                                where role = "seller"
+                                group by l.id, u.username; """)
         locals = self.cur.fetchall()
         return locals
     
