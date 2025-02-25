@@ -61,7 +61,7 @@ class DBConnection:
                         where l.id = '{tiendaId}'
                         and po.isPaid = 1
                         having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
-                        AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+                        AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00');""")
         sales = self.cur.fetchall()
         return sales
     
@@ -80,7 +80,7 @@ class DBConnection:
                             inner join customer_information ci on po.id = ci.paymentOrderId
                             where l.id = '{tiendaId}'
                             having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
-                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00');""")
         sales = self.cur.fetchall()
         return sales
     
@@ -96,7 +96,7 @@ class DBConnection:
                             where l.id = '{tiendaId}' 
                             and po.isPaid = 1
                             having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
-                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')""")
+                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00');""")
         payments = self.cur.fetchall()
         return payments
     
@@ -116,7 +116,7 @@ class DBConnection:
                                     having fechapago >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
                             		AND fechapago <= CONCAT(date('{date}'), ' 11:00:00')
                                     ) ci on ci.orderId = o.id 
-                            where l.id = '{tiendaId}'""")
+                            where l.id = '{tiendaId}';""")
         payments = self.cur.fetchall()
         return payments
     
@@ -131,6 +131,27 @@ class DBConnection:
                             inner join payment_type pt on pt.id = p.paymentTypeId
                             inner join customer_information ci on po.id = ci.paymentOrderId
                             where l.id = '{tiendaId}' 
-                            and po.isPaid = 0""")
+                            and po.isPaid = 0;""")
         payments = self.cur.fetchall()
         return payments
+    
+    def get_for_employee(self,username,tiendaId,date):
+        logger.info(f'Query for employee for user {username}')
+        self.cur.execute(f"""select o.id as venta, o.totalDl, o.totalBs, 
+                            CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion, 
+                            p.name as producto, c.name as categoria, oi.price, oi.quantity
+                            from orders o
+                            inner join local l on l.id = o.localId
+                            inner join order_item oi on oi.orderId = o.id
+                            inner join product p on p.id = oi.productId
+                            inner join category c on c.id = p.categoryId
+                            inner join payment_order po on po.orderId = o.id
+                            inner join payment_local pl on po.paymentId = pl.id
+                            inner join payment_type pt on pt.id = pl.paymentTypeId
+                            where l.id = '{tiendaId}'
+                            and po.isPaid = 0
+                            and pt.name = 'Para empleado'
+                            having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                            AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00');""")
+        sales = self.cur.fetchall()
+        return sales
