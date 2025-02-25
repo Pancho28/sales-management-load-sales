@@ -22,6 +22,7 @@ class DBConnection:
             self.db_password = os.getenv("DATABASE_PASSWORD")
             self.db_name = os.getenv("DATABASE_NAME")
             self.db_port = int(os.getenv("DATABASE_PORT"))
+        logger.info('Creating conection')
         self.conection = pymysql.connect(host=self.db_host, user=self.db_user, password=self.db_password, db=self.db_name, port=self.db_port)
         self.cur = self.conection.cursor()
     
@@ -31,7 +32,7 @@ class DBConnection:
 
     def get_locals(self, date):
         logger.info('Query locals')
-        self.cur.execute(f"""SELECT l.id, u.username 
+        self.cur.execute(f"""SELECT l.id, l.name, u.username 
                                 FROM user u 
                                 inner join local l on l.userId = u.id
                                 inner join (

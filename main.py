@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import sys
 from datetime import datetime, timedelta
 from config.db import DBConnection
+from config.alchemy import AlchemyConnection
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -23,15 +24,19 @@ def main():
             return
         close_date = datetime.strptime(formatted_date, "%Y-%m-%d") - timedelta(days=1)
         close_date = close_date.strftime("%Y-%m-%d")
+        # Conexiones a base de datos orgien
         db = DBConnection(sys.argv[1])
+        # Conexion a base de datos destino
+        alchemy = AlchemyConnection(sys.argv[1])
+        motor = alchemy.getMotor()
         locals = db.get_locals(formatted_date)
         if len(locals) == 0:
             logger.warning('No locals to process')
             return
         logger.info(f'Total locals {len(locals)}')
-        for id, username in locals:
+        for id, name, username in locals:
             # Flujo de productos vendidos
-            sales = db.get_sales(username,id, formatted_date)
+            sales = db.get_sales(username, id, formatted_date)
             dfSales = pd.DataFrame(sales, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
             dfSales = dfSales.assign(fechacierre=pd.to_datetime(close_date))
@@ -50,10 +55,11 @@ def main():
             else:
                 logger.info('No sales paid')
             dfSales = dfSales.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'producto', 'categoria', 'precio', 'cantidad'])
+            dfSales.insert(1, 'local', name)
             logger.info(f'Total sales {dfSales.venta.nunique()}')
             logger.info(f'Total sales records {dfSales.shape[0]}')
             # Flujo de pagos
-            payments = db.get_payments(username,id, formatted_date)
+            payments = db.get_payments(username, id, formatted_date)
             dfPayments = pd.DataFrame(payments, columns=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda', 'fechacreacion'])
             dfPayments = dfPayments.assign(fechacierre=pd.to_datetime(close_date))
             dfPayments = dfPayments.drop('fechacreacion', axis=1)
@@ -70,27 +76,57 @@ def main():
             else:
                 logger.info('No payments paid')
             dfPayments = dfPayments.drop_duplicates(subset=['venta', 'totalDl', 'totalBs', 'cantidad', 'pago', 'moneda'])
+            dfPayments.insert(1, 'local', name)
             logger.info(f'Total payments {dfPayments.venta.nunique()}')
             logger.info(f'Total payments records {dfPayments.shape[0]}')
             # Flujo de por pagar
             unpaid = db.get_payments_unpaid(username,id)
             dfUnpaid = pd.DataFrame(unpaid, columns=['venta', 'totalDl', 'totalBs', 'nombre', 'apellido', 'fechacreacion'])
+            dfUnpaid.insert(1, 'local', name)
             logger.info(f'Total unpaid {dfUnpaid.venta.nunique()}')
             logger.info(f'Total unpaid records {dfUnpaid.shape[0]}')
-            # Flujo de guardado
+            #flujo de empleados
+            employees = db.get_for_employee(username, id, formatted_date)
+            dfEmployees = pd.DataFrame(employees, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad'])
+            dfEmployees = dfEmployees.assign(fechacierre=pd.to_datetime(close_date))
+            dfEmployees = dfEmployees.drop('fechacreacion', axis=1)
+            dfEmployees.insert(1, 'local', name)
+            logger.info(f'Total employees {dfEmployees.venta.nunique()}')
+            logger.info(f'Total employees records {dfEmployees.shape[0]}')
+            # Flujo de guardado en archivos
             writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
             dfSales.to_excel(writer, sheet_name='ventas', index=False)
+            logger.info('Writing sales')
             dfPayments.to_excel(writer, sheet_name='pagos', index=False)
+            logger.info('Writing payments')
             if dfUnpaid.shape[0] > 0:
-                logger.info(f'Saving unpaid')
+                logger.info('Writing unpaid')
                 dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
+            if dfEmployees.shape[0] > 0:
+                logger.info('Writing employees')
+                dfEmployees.to_excel(writer, sheet_name='empleados', index=False)
             writer.close()
             logger.info(f'File saved {username}-{formatted_date}.xlsx')
+            # Flujo de guardado en base de datos (Looker)
+            dfSales.to_sql('ventas', con=motor, if_exists='append', index=False)
+            logger.info(f'Sales {dfSales.shape[0]} saved')
+            dfPayments.to_sql('pagos', con=motor, if_exists='append', index=False)
+            logger.info(f'Payments {dfPayments.shape[0]} saved')
+            if dfUnpaid.shape[0] > 0:
+                dfUnpaid.to_sql('por_pagar', con=motor, if_exists='append', index=False)
+                logger.info(f'Unpaid {dfUnpaid.shape[0]} saved')
+            if dfEmployees.shape[0] > 0:
+                dfEmployees.to_sql('empleados', con=motor, if_exists='append', index=False)
+                logger.info(f'Employees {dfEmployees.shape[0]} saved')
+            logger.info(f'Local {name} processed')
     except Exception as e:
         logger.error(e)
     finally:
         if db:
             db.close_conection()
+        if motor:
+            motor.dispose()
+            logger.info('Close engine')
         logger.info('End process')
 
 if __name__ == '__main__':
