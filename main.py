@@ -33,6 +33,8 @@ def main():
         if len(locals) == 0:
             logger.warning('No locals to process')
             return
+        # Se eliminan los datos de la tabla por_pagar, ya que se carga completa en la ejecucion
+        alchemy.truncate_table('por_pagar')
         logger.info(f'Total locals {len(locals)}')
         for id, name, username in locals:
             # Flujo de productos vendidos

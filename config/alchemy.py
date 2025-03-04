@@ -27,11 +27,12 @@ class AlchemyConnection:
             raise Exception('Invalid enviroment')
         logger.info('Creating engine')
         self.motor = create_engine(f"mysql+pymysql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}")
-        # Se eliminan los datos de la tabla por_pagar, ya que se carga completa en la ejecucion
-        with self.motor.connect() as conexion:
-            consulta = text(f"TRUNCATE TABLE por_pagar")
-            conexion.execute(consulta)
-        logger.info('Truncate por_pagar')
         
     def getMotor(self):
         return self.motor
+    
+    def truncate_table(self, table):
+        with self.motor.connect() as conexion:
+            consulta = text(f"TRUNCATE TABLE {table}")
+            conexion.execute(consulta)
+        logger.info(f'Truncate {table}')

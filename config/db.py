@@ -39,8 +39,8 @@ class DBConnection:
                                       select o.localId, date(CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00')) as fechacreacion 
                                 		from orders o 
                                 		group by o.localId, fechacreacion
-                                		having fechacreacion >= DATE_ADD('{date}', INTERVAL -1 DAY)
-                                		AND fechacreacion <= date('{date}')
+                                		having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
+                                		AND fechacreacion <= CONCAT(date('{date}'), ' 11:00:00')
                                 ) o on o.localId = l.id
                                 where role = "seller"
                                 group by l.id, u.username; """)
