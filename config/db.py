@@ -36,7 +36,7 @@ class DBConnection:
                                 FROM user u 
                                 inner join local l on l.userId = u.id
                                 inner join (
-                                      select o.localId, date(CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00')) as fechacreacion 
+                                      select o.localId, CONVERT_TZ(o.creationDate,  @@session.time_zone, '-04:00') as fechacreacion 
                                 		from orders o 
                                 		group by o.localId, fechacreacion
                                 		having fechacreacion >= CONCAT(DATE_ADD('{date}', INTERVAL -1 DAY), ' 11:00:00')
