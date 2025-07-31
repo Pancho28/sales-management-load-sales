@@ -13,10 +13,14 @@ load_dotenv()
 def main():
     try:
         db = None
-        if len(sys.argv) == 3:
-            formatted_date = datetime.strptime(sys.argv[2], "%Y-%m-%d").strftime("%Y-%m-%d")
+        motor = None
+        if len(sys.argv) == 4:
+            formatted_date = datetime.strptime(sys.argv[3], "%Y-%m-%d").strftime("%Y-%m-%d")
+            if (formatted_date > datetime.now().strftime("%Y-%m-%d")):
+                logger.warning('Cannot reprocess future dates')
+                return
             logger.info(f'Starting reprocess {formatted_date}')
-        elif len(sys.argv) == 2:
+        elif len(sys.argv) == 3:
             formatted_date = datetime.now().strftime("%Y-%m-%d")
             logger.info(f'Starting process {formatted_date}')
         else:
@@ -26,17 +30,12 @@ def main():
         close_date = close_date.strftime("%Y-%m-%d")
         # Conexiones a base de datos orgien
         db = DBConnection(sys.argv[1])
-        # Conexion a base de datos destino
-        alchemy = AlchemyConnection(sys.argv[1])
-        motor = alchemy.getMotor()
         locals = db.get_locals(formatted_date)
         if len(locals) == 0:
             logger.warning('No locals to process')
             return
-        # Se eliminan los datos de la tabla por_pagar, ya que se carga completa en la ejecucion
-        alchemy.truncate_table('por_pagar')
-        logger.info(f'Total locals {len(locals)}')
         for id, name, username in locals:
+            logger.info(f'Total locals {len(locals)}')
             # Flujo de productos vendidos
             sales = db.get_sales(username, id, formatted_date)
             dfSales = pd.DataFrame(sales, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
@@ -96,30 +95,40 @@ def main():
             logger.info(f'Total employees {dfEmployees.venta.nunique()}')
             logger.info(f'Total employees records {dfEmployees.shape[0]}')
             # Flujo de guardado en archivos
-            writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
-            dfSales.to_excel(writer, sheet_name='ventas', index=False)
-            logger.info('Writing sales')
-            dfPayments.to_excel(writer, sheet_name='pagos', index=False)
-            logger.info('Writing payments')
-            if dfUnpaid.shape[0] > 0:
-                logger.info('Writing unpaid')
-                dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
-            if dfEmployees.shape[0] > 0:
-                logger.info('Writing employees')
-                dfEmployees.to_excel(writer, sheet_name='empleados', index=False)
-            writer.close()
-            logger.info(f'File saved {username}-{formatted_date}.xlsx')
+            if sys.argv[2] == 'local':
+                logger.info(f'Saving file for {username}')
+                writer = pd.ExcelWriter(f'../locals sales/{username}-{formatted_date}.xlsx')
+                dfSales.to_excel(writer, sheet_name='ventas', index=False)
+                logger.info('Writing sales')
+                dfPayments.to_excel(writer, sheet_name='pagos', index=False)
+                logger.info('Writing payments')
+                if dfUnpaid.shape[0] > 0:
+                    logger.info('Writing unpaid')
+                    dfUnpaid.to_excel(writer, sheet_name='por pagar', index=False)
+                if dfEmployees.shape[0] > 0:
+                    logger.info('Writing employees')
+                    dfEmployees.to_excel(writer, sheet_name='empleados', index=False)
+                writer.close()
+                logger.info(f'File saved {username}-{formatted_date}.xlsx')
             # Flujo de guardado en base de datos (Looker)
-            dfSales.to_sql('ventas', con=motor, if_exists='append', index=False)
-            logger.info(f'Sales {dfSales.shape[0]} saved')
-            dfPayments.to_sql('pagos', con=motor, if_exists='append', index=False)
-            logger.info(f'Payments {dfPayments.shape[0]} saved')
-            if dfUnpaid.shape[0] > 0:
-                dfUnpaid.to_sql('por_pagar', con=motor, if_exists='append', index=False)
-                logger.info(f'Unpaid {dfUnpaid.shape[0]} saved')
-            if dfEmployees.shape[0] > 0:
-                dfEmployees.to_sql('empleados', con=motor, if_exists='append', index=False)
-                logger.info(f'Employees {dfEmployees.shape[0]} saved')
+            elif sys.argv[2] == 'server':
+                # Conexion a base de datos destino
+                alchemy = AlchemyConnection(sys.argv[1])
+                motor = alchemy.getMotor()
+                # Se eliminan los datos de la tabla por_pagar, ya que se carga completa en la ejecucion
+                alchemy.truncate_table('por_pagar')
+                logger.info(f'Saving data for {username} in looker')
+                dfSales.to_sql('ventas', con=motor, if_exists='append', index=False)
+                logger.info(f'Sales {dfSales.shape[0]} saved')
+                dfPayments.to_sql('pagos', con=motor, if_exists='append', index=False)
+                logger.info(f'Payments {dfPayments.shape[0]} saved')
+                if dfUnpaid.shape[0] > 0:
+                    dfUnpaid.to_sql('por_pagar', con=motor, if_exists='append', index=False)
+                    logger.info(f'Unpaid {dfUnpaid.shape[0]} saved')
+                if dfEmployees.shape[0] > 0:
+                    dfEmployees.to_sql('empleados', con=motor, if_exists='append', index=False)
+                    logger.info(f'Employees {dfEmployees.shape[0]} saved')
+                logger.info(f'Data saved in looker for {username}')
             logger.info(f'Local {name} processed')
     except Exception as e:
         logger.error(e)
