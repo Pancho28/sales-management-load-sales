@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timedelta
 from config.db import DBConnection
 from config.alchemy import AlchemyConnection
+from helper.enum import dias_semana
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -41,12 +42,12 @@ def main():
             dfSales = pd.DataFrame(sales, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSales.fechacreacion = pd.to_datetime(dfSales.fechacreacion)
             dfSales = dfSales.assign(fechacierre=pd.to_datetime(close_date))
-            dfSales = dfSales.assign(dia=dfSales.fechacierre.dt.day_name(locale="es_ES"), hora=dfSales.fechacreacion.dt.strftime("%H"))
+            dfSales = dfSales.assign(dia=dfSales.fechacierre.dt.day_name().map(dias_semana), hora=dfSales.fechacreacion.dt.strftime("%H"))
             salesPaid = db.get_sales_paid(username,id, formatted_date)
             dfSalesPaid = pd.DataFrame(salesPaid, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
             dfSalesPaid.fechacreacion = pd.to_datetime(dfSalesPaid.fechacreacion)
             dfSalesPaid = dfSalesPaid.assign(fechacierre=pd.to_datetime(close_date))
-            dfSalesPaid = dfSalesPaid.assign(dia=dfSalesPaid.fechacierre.dt.day_name(locale="es_ES"), hora=dfSalesPaid.fechacreacion.dt.strftime("%H"))
+            dfSalesPaid = dfSalesPaid.assign(dia=dfSalesPaid.fechacierre.dt.day_name().map(dias_semana), hora=dfSalesPaid.fechacreacion.dt.strftime("%H"))
             if dfSalesPaid.shape[0] > 0:
                 logger.info(f'Total sales paid {dfSalesPaid.venta.nunique()}')
                 if dfSales.shape[0] == 0:
