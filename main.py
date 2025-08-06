@@ -1,5 +1,5 @@
 import pandas as pd
-import logging
+from loguru import logger
 from dotenv import load_dotenv
 import sys
 from datetime import datetime, timedelta
@@ -7,11 +7,8 @@ from config.db import DBConnection
 from config.alchemy import AlchemyConnection
 from helper.enum import dias_semana
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-load_dotenv()
-
 def main():
+    load_dotenv()
     try:
         db = None
         motor = None

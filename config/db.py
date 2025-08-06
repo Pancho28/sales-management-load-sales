@@ -1,9 +1,6 @@
 import os
 import pymysql
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+from loguru import logger
 
 class DBConnection:
 
