@@ -1,9 +1,6 @@
 import os
 from sqlalchemy import create_engine, text
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+from loguru import logger
 
 class AlchemyConnection:
 
