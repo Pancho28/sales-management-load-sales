@@ -7,7 +7,7 @@ from config.db import DBConnection
 from config.alchemy import AlchemyConnection
 from helper.enum import dias_semana
 
-# Elimina el handler por defecto que envía todo a stderr
+# Elimina el handler por defecto que envía todo a stderr (Todos los niveles de logs salen como error en railway)
 logger.remove()
 
 # Configura un handler para los logs de nivel INFO y DEBUG
@@ -47,8 +47,9 @@ def main():
         if len(locals) == 0:
             logger.warning('No locals to process')
             return
+        logger.info(f'Total locals {len(locals)}')
+        check_drop = True
         for id, name, username in locals:
-            logger.info(f'Total locals {len(locals)}')
             # Flujo de productos vendidos
             sales = db.get_sales(username, id, formatted_date)
             dfSales = pd.DataFrame(sales, columns=['venta', 'totalDl', 'totalBs', 'fechacreacion', 'producto', 'categoria', 'precio', 'cantidad', 'fechaentrega'])
@@ -128,8 +129,12 @@ def main():
                 # Conexion a base de datos destino
                 alchemy = AlchemyConnection(sys.argv[1])
                 motor = alchemy.getMotor()
-                # Se eliminan los datos de la tabla por_pagar, ya que se carga completa en la ejecucion
-                alchemy.truncate_table('por_pagar')
+                if check_drop:
+                    # Se verifica que no se haya borrado la informacion y luego se elimina
+                    # esto evita que borre la tabla por cada local a cargar
+                    # el proceso inserta toda la data disponible de ventas por pagar
+                    alchemy.truncate_table('por_pagar')
+                    check_drop = False
                 logger.info(f'Saving data for {username} in looker')
                 dfSales.to_sql('ventas', con=motor, if_exists='append', index=False)
                 logger.info(f'Sales {dfSales.shape[0]} saved')
