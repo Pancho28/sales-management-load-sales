@@ -41,13 +41,16 @@ def main():
             return
         close_date = datetime.strptime(formatted_date, "%Y-%m-%d") - timedelta(days=1)
         close_date = close_date.strftime("%Y-%m-%d")
-        # Conexiones a base de datos orgien
+        # Conexiones a base de datos origen
         db = DBConnection(sys.argv[1])
         locals = db.get_locals(formatted_date)
         if len(locals) == 0:
             logger.warning('No locals to process')
             return
         logger.info(f'Total locals {len(locals)}')
+        # Conexion a base de datos destino
+        alchemy = AlchemyConnection(sys.argv[1])
+        motor = alchemy.getMotor()
         check_drop = True
         for id, name, username in locals:
             # Flujo de productos vendidos
@@ -126,11 +129,8 @@ def main():
                 logger.info(f'File saved {username}-{formatted_date}.xlsx')
             # Flujo de guardado en base de datos (Looker)
             elif sys.argv[2] == 'server':
-                # Conexion a base de datos destino
-                alchemy = AlchemyConnection(sys.argv[1])
-                motor = alchemy.getMotor()
                 if check_drop:
-                    # Se verifica que no se haya borrado la informacion y luego se elimina
+                    # Se verifica que no se haya borrado la tabla y luego se elimina
                     # esto evita que borre la tabla por cada local a cargar
                     # el proceso inserta toda la data disponible de ventas por pagar
                     alchemy.truncate_table('por_pagar')
