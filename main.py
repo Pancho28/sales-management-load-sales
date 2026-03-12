@@ -61,7 +61,7 @@ def main():
         db = DBConnection(config.env)
         locals_list = db.get_locals(config.formatted_date)
         
-        if not validate_locals_list(locals_list, config.formatted_date):
+        if not validate_locals_list(locals_list, config.formatted_date, config.env):
             return
         
         alchemy = AlchemyConnection(config.env)
@@ -101,14 +101,15 @@ def main():
                 )
                 
                 # --- VALIDATE (Notificaciones solo en Server como antes) ---
-                validate_sales_vs_payments(df_sales, df_payments, name)
+                validate_sales_vs_payments(df_sales, df_payments, name, config.env)
                 
             logger.info(f'Local {name} processed')
             
     except Exception as e:
         logger.error(e)
+        subject_prefix = "Sales Management Prueba - " if config.env == 'dev' else "Sales Management - "
         send_email(
-            subject="Sales Management - Error de Ejecución",
+            subject=f"{subject_prefix}Error de Ejecución",
             body=f"Ocurrió una excepción durante la ejecución del proceso ETL:\n\n{str(e)}"
         )
     finally:
