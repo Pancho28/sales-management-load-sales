@@ -20,6 +20,7 @@ src/
 ├── transform/    # Lógica de negocio y limpieza utilizando Pandas
 ├── load/         # Carga y persistencia de datos (Excel o SQL Model)
 └── utils/        # Validaciones y correos de notificación
+tests/            # Pruebas unitarias y mocks de sistema
 ```
 
 ## ⚙️ Requisitos e Instalación
@@ -66,3 +67,23 @@ python main.py <ambiente> <destino> [fecha_reproceso]
    ```bash
    python main.py dev local "2024-06-25"
    ```
+
+## 🧪 Pruebas Unitarias
+
+El proyecto cuenta con una suite de pruebas unitarias para garantizar la fiabilidad del proceso ETL sin necesidad de conectarse a bases de datos reales o enviar correos.
+
+### Ejecución de Pruebas:
+
+Para ejecutar todos los tests, utiliza `pytest` desde la raíz del proyecto (con el entorno virtual activado):
+
+```bash
+python -m pytest tests/ -v
+```
+
+### Cobertura de la Suite:
+
+- **Extract:** Simula la comunicación con la base de datos MySQL (Mocks).
+- **Transform:** Valida la lógica de limpieza y consolidación de Pandas.
+- **Load:** Simula la escritura de archivos Excel y la carga en SQL.
+- **Utils/Validators:** Prueba el sistema de cuadre Ventas vs Pagos y notificaciones.
+- **Core/Config:** Valida el manejo de argumentos de consola y lógica de fechas.
