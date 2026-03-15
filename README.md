@@ -20,13 +20,15 @@ src/
 ├── transform/    # Lógica de negocio y limpieza utilizando Pandas
 ├── load/         # Carga y persistencia de datos (Excel o SQL Model)
 └── utils/        # Validaciones y correos de notificación
+tests/            # Pruebas unitarias y mocks de sistema
+agent.md          # Guía de reglas y estándares para agentes IA
 ```
 
 ## ⚙️ Requisitos e Instalación
 
 1. Asegúrate de tener **Python 3.8+** instalado.
 2. Clona el repositorio y crea un entorno virtual (opcional pero recomendado).
-3. Instala las dependencias:
+3. Instala las dependencias (incluyendo herramientas de desarrollo):
    ```bash
    pip install -r requirements.txt
    ```
@@ -66,3 +68,33 @@ python main.py <ambiente> <destino> [fecha_reproceso]
    ```bash
    python main.py dev local "2024-06-25"
    ```
+
+## 🧪 Pruebas Unitarias y Cobertura
+
+El proyecto cuenta con una robusta suite de pruebas unitarias y reportes de cobertura para garantizar la fiabilidad del proceso ETL.
+
+### Ejecución de Pruebas:
+
+Para ejecutar todos los tests con reporte de cobertura en consola:
+
+```bash
+python -m pytest tests/ -v --cov=src --cov=config --cov=helper
+```
+
+Para generar un reporte detallado en HTML (se crea la carpeta `htmlcov/`):
+
+```bash
+python -m pytest tests/ -v --cov=src --cov=config --cov=helper --cov-report=html
+```
+
+### Cobertura de la Suite (98% Total):
+
+- **Config & DB (100%):** Pruebas completas de conexión (MySQL y SQLAlchemy) y manejo de argumentos.
+- **Extract (100%):** Simula la comunicación con la base de datos MySQL (Mocks).
+- **Transform (~90%):** Valida la lógica de limpieza y consolidación de Pandas.
+- **Load (100%):** Simula la escritura de archivos Excel y la carga en SQL.
+- **Utils/Validators (100%):** Prueba el sistema de cuadre Ventas vs Pagos y notificaciones.
+
+## 🤖 Guía para Agentes (agent.md)
+
+Este repositorio incluye un archivo `agent.md` que define las reglas, estándares de codificación, arquitectura y protocolos de desarrollo que cualquier agente de IA debe seguir al interactuar con el código. Es la **fuente de verdad** para mantener la consistencia del proyecto.
