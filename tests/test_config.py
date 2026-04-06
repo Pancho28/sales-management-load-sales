@@ -1,6 +1,6 @@
 import pytest
 import sys
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from src.core.config import parse_arguments, AppConfig
 from config.db import DBConnection
 from config.alchemy import AlchemyConnection

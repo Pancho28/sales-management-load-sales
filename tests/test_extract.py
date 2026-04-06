@@ -1,4 +1,3 @@
-import pytest
 from src.extract.employees_extractor import extract_employees
 from src.extract.payments_extractor import extract_payments
 from src.extract.sales_extractor import extract_sales

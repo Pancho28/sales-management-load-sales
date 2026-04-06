@@ -1,4 +1,3 @@
-import pytest
 import os
 from helper.email_sender import send_email
 

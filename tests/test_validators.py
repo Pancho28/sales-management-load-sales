@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from src.utils.validators import validate_sales_vs_payments, validate_locals_list
 

@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from src.load.excel_loader import load_to_excel
 from src.load.sql_loader import load_to_sql
