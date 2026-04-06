@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from src.transform.employees_transformer import transform_employees
 from src.transform.payments_transformer import transform_payments

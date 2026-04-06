@@ -27,7 +27,16 @@ agent.md          # Guía de reglas y estándares para agentes IA
 ## ⚙️ Requisitos e Instalación
 
 1. Asegúrate de tener **Python 3.8+** instalado.
-2. Clona el repositorio y crea un entorno virtual (opcional pero recomendado).
+2. Clona el repositorio y crea un entorno virtual (recomendado):
+   ```bash
+   # En Windows:
+   python -m venv load_sales
+   .\load_sales\Scripts\activate
+   
+   # En macOS o Linux:
+   python3 -m venv load_sales
+   source load_sales/bin/activate
+   ```
 3. Instala las dependencias (incluyendo herramientas de desarrollo):
    ```bash
    pip install -r requirements.txt
@@ -97,4 +106,4 @@ python -m pytest tests/ -v --cov=src --cov=config --cov=helper --cov-report=html
 
 ## 🤖 Guía para Agentes (agent.md)
 
-Este repositorio incluye un archivo `agent.md` que define las reglas, estándares de codificación, arquitectura y protocolos de desarrollo que cualquier agente de IA debe seguir al interactuar con el código. Es la **fuente de verdad** para mantener la consistencia del proyecto.
+Este repositorio incluye un archivo `agent.md` que define las reglas, estándares de codificación, arquitectura y protocolos de desarrollo que cualquier agente de IA debe seguir al interactuar con el código. Es la **fuente de verdad** para mantener la consistencia del proyecto.

@@ -39,6 +39,6 @@ def send_email(subject: str, body: str):
         server.login(smtp_user, smtp_password)
         server.send_message(msg)
         server.quit()
-        logger.info(f"Email enviado correctamente")
+        logger.info("Email enviado correctamente")
     except Exception as e:
         logger.error(f"Error al enviar el email: {e}")
